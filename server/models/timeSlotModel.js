@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const timeSlotSchema = new mongoose.Schema({
   startTime: Date,
   endTime: Date,
+  isFun: Boolean,
   field: {type: mongoose.Schema.Types.ObjectId, ref: 'Field'},
   isReserved: { type: Boolean, default: false}
 })
