@@ -1,6 +1,6 @@
 import React from 'react'
 
-const TimeSlot = ({timeSlotData, facilityId, onTimeSelected}) => {
+const TimeSlot = ({timeSlotData, facilityName,facilityId, onTimeSelected}) => {
   const {_id:id,isReserved:reserved, startTime} = timeSlotData
   const dateObject = new Date(startTime)
   
@@ -14,7 +14,7 @@ const TimeSlot = ({timeSlotData, facilityId, onTimeSelected}) => {
   const time = hours + ':' + minutes + ' ' + ampm
   return (
     <>
-    <input type="btn" name="time" id={id} className="btn-check" disabled={reserved} autoComplete='off' onClick={() => onTimeSelected(time,facilityId,id)}/>
+    <input type="btn" name="time" id={id} className="btn-check" disabled={reserved} autoComplete='off' onClick={() => onTimeSelected(time,facilityName,facilityId,id)}/>
     <label className={reserved ? 'btn btn-outline-danger disabled' : 'btn btn-outline-danger' } htmlFor={id}>{time}</label>
   </>
   )

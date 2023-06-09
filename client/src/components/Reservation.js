@@ -124,12 +124,14 @@ const ReservationReducer = () => {
           selectedReservation:{
             reservationId: action.id,
             activeTime: action.timeslot,
-            activeFacility: action.facilityId
+            activeFacility: action.facilityName,
+            activeFacilityId: action.facilityId
           }
         };
 
       case ACTIONS.SUBMIT_RESERVATION:
-        console.log(state.selectedReservation)
+        const {reservationId} = state.selectedReservation
+        console.log(reservationId)
         return {...state, selectedReservation: {}}
 
       case ACTIONS.SET_DATES:
@@ -167,14 +169,14 @@ const ReservationReducer = () => {
   },[])
 
 
-  const [state,dispatch] = useReducer(reducer,{facilities: {}, reservationSlots : [], availableDates: [], activeDate: "", activeTime: "", activeFacility:"", selectedReservation: {} })
+  const [state,dispatch] = useReducer(reducer,{facilities: {}, reservationSlots : [], availableDates: [], activeDate: "", activeTime: "", activeFacility:"",activeFacilityId: "", selectedReservation: {} })
 
   const toggleDate = (date) => {
     
     dispatch({type: 'toggle-date',date: date.target.value})
   }
-  const toggleSelected = (timeslot, facilityId,id) => {
-    dispatch({type: 'select-timeSlot', timeslot,facilityId,id })
+  const toggleSelected = (timeslot, facilityName, facilityId,id) => {
+    dispatch({type: 'select-timeSlot',facilityName, timeslot,facilityId,id })
   }
 
   const handleSubmit = () => {
