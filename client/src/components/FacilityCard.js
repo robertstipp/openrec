@@ -10,7 +10,7 @@ const FacilityCard = ({facilityData,toggleSelected}) => {
 
     <article key={facilityId} className='d-flex flex-column justify-content-start align-items-center'>
       <TimeSlotHeader facilityName={facilityName} date={date}  />
-      <TimeSlotsList timeSlots={timeSlots} onTimeSelected={toggleSelected} facilityId={facilityName} />
+      <TimeSlotsList timeSlots={timeSlots} facilityName={facilityName} onTimeSelected={toggleSelected} facilityId={facilityId} />
     </article>
     
   )

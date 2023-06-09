@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useState, useReducer } from 'react'
 
 import FacilityCard from './FacilityCard'
@@ -6,10 +6,13 @@ import SelectedReservation from './SelectedReservation'
 import DateNavigation from './Navigation/DateNavigation/DateNavigation'
 
 
+
 const ACTIONS = {
   TOGGLE_DATE:'toggle-date',
   SELECT_TIMESLOT: 'select-timeSlot',
-  SUBMIT_RESERVATION: 'submit-reservation'
+  SUBMIT_RESERVATION: 'submit-reservation',
+  SET_DATES: 'set-dates',
+  LOAD_DATA: 'load-data'
 }
 
 
@@ -77,22 +80,35 @@ const initialFacilities = [
   },
 ]
 
+const URL = `http://127.0.0.1:8080`
 
 
 const ReservationReducer = () => {
   
   const reducer = (state,action) => {
     switch (action.type) {
+
+      case ACTIONS.LOAD_DATA: 
+      
+      return {...state,facilities:action.facilities}
+
       case ACTIONS.TOGGLE_DATE:
-        const reservationSlots = state.initialFacilities.map((facility)=>{
+        const reservationSlots = state.facilities.map((facility)=>{
           const obj = {}
           
+          const selectedDate = action.date
+          const timeSlots = facility.timeSlots
+            .filter(timeSlot=>{
+              const dateObject = new Date(timeSlot.startTime)
+              const dateStr = dateObject.toISOString().split('T')[0];
+              return dateStr === selectedDate
+            })
+            
+  
           
-          const timeSlots = facility.dates.filter(date=>date.date === action.date)[0].timeSlots
           
-          
-          obj.facilityName = facility.facilityName
-          obj.facilityId = facility.facilityId
+          obj.facilityName = facility.name
+          obj.facilityId = facility._id
           obj.date = action.date
           
           obj.timeSlots = timeSlots
@@ -101,18 +117,25 @@ const ReservationReducer = () => {
 
 
         return {...state, activeDate: action.date, reservationSlots}
+
       case ACTIONS.SELECT_TIMESLOT:
         return {
           ...state,
           selectedReservation:{
             reservationId: action.id,
             activeTime: action.timeslot,
-            activeFacility: action.facilityId
+            activeFacility: action.facilityName,
+            activeFacilityId: action.facilityId
           }
         };
+
       case ACTIONS.SUBMIT_RESERVATION:
-        console.log(state.selectedReservation)
+        const {reservationId} = state.selectedReservation
+        console.log(reservationId)
         return {...state, selectedReservation: {}}
+
+      case ACTIONS.SET_DATES:
+        return {...state, availableDates: action.dates}
       default:
         return state;
     }
@@ -126,13 +149,34 @@ const ReservationReducer = () => {
     return Array.from(availableDates)
   }
 
-  const [state,dispatch] = useReducer(reducer,{initialFacilities, reservationSlots : [], availableDates:getAvailableTimes(initialFacilities), activeDate: "", activeTime: "", activeFacility:"", selectedReservation: {} })
+  useEffect(()=>{
+    fetch(`${URL}/api/v1/fields`)
+    .then(response => response.json())
+    .then(results => {
+      const timeSet = new Set()
+      const fields = results.data.fields
+      dispatch({type: 'load-data', facilities: fields})
+      fields.forEach(field=>{
+        field.timeSlots.forEach(timeSlot=>{
+          const dateObject =  new Date(timeSlot.startTime)
+          const dateStr = dateObject.toISOString().split('T')[0];
+          timeSet.add(dateStr);
+        })
+      })
+      dispatch({type: 'set-dates',dates: Array.from(timeSet)})
+    })
+    
+  },[])
+
+
+  const [state,dispatch] = useReducer(reducer,{facilities: {}, reservationSlots : [], availableDates: [], activeDate: "", activeTime: "", activeFacility:"",activeFacilityId: "", selectedReservation: {} })
 
   const toggleDate = (date) => {
+    
     dispatch({type: 'toggle-date',date: date.target.value})
   }
-  const toggleSelected = (timeslot, facilityId,id) => {
-    dispatch({type: 'select-timeSlot', timeslot,facilityId,id })
+  const toggleSelected = (timeslot, facilityName, facilityId,id) => {
+    dispatch({type: 'select-timeSlot',facilityName, timeslot,facilityId,id })
   }
 
   const handleSubmit = () => {
@@ -140,10 +184,12 @@ const ReservationReducer = () => {
   }
 
   
+
   return (
     <div className="container">
       <div className="row vh-100 justify-content-evenly">
         <div className="col-3 d-flex">
+          {/* <DateNavigation dates={dates} toggleDate={toggleDate} /> */}
           <DateNavigation dates={state.availableDates} toggleDate={toggleDate} />
         </div>
         
@@ -155,9 +201,10 @@ const ReservationReducer = () => {
           )}
           </div>
         </main>
-            <div className='col-3 d-flex flex-column justify-content-center align-items-center'>
-            {state.selectedReservation ? <SelectedReservation selectedReservation={state.selectedReservation} submitReservation={handleSubmit}></SelectedReservation> : ""}
-            </div>
+
+        <div className='col-3 d-flex flex-column justify-content-center align-items-center'>
+          {state.selectedReservation ? <SelectedReservation selectedReservation={state.selectedReservation} submitReservation={handleSubmit}></SelectedReservation> : ""}
+        </div>
           
       </div>
     </div>
