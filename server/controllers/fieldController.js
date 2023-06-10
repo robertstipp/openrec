@@ -1,5 +1,6 @@
 const Field = require('../models/fieldModel')
 const { TimeSlot } = require('../models/timeSlotModel')
+const {ErrorHandler} = require('./errorController')
 
 exports.getAllFields = async (req,res) => {
   try {
@@ -41,15 +42,12 @@ exports.getAllFields = async (req,res) => {
   }
 }
 
-exports.getField = async (req,res) => {
+exports.getField = async (req,res,next) => {
   try {
     const field = await Field.findById(req.params.id)
     
     if (!field) {
-      res.status(404).json({
-        status: 'fail',
-        message: "No field"
-      })
+      throw new ErrorHandler(500, 'Internal Error')
     }
     res.status(200).json({
       status: 'success',
@@ -59,10 +57,7 @@ exports.getField = async (req,res) => {
     })
 
   } catch (err) {
-    res.status(404).json({
-      status:'fail',
-      message: err
-    })
+    next(err)
   }
 }
 

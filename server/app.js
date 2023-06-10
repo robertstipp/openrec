@@ -4,6 +4,9 @@ const cors = require('cors')
 const fieldRouter = require('./routes/fieldRoutes')
 const reservationRouter = require('./routes/reservationRoutes')
 
+
+const {handleError} = require('./controllers/errorController')
+
 const app = express()
 
 // Middleware
@@ -16,7 +19,7 @@ app.use((req,res,next)=>{
   next()
 })
 
-// Model
+
 
 
 // Routes
@@ -27,12 +30,7 @@ app.get('/', (req,res) => {
 
 app.use('/api/v1/fields', fieldRouter)
 app.use('/api/v1/reservations',reservationRouter)
-
-
-
-
-
-
+app.use(handleError)
 
 
 module.exports = app
