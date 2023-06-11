@@ -1,5 +1,4 @@
 const mongoose = require('mongoose')
-const catchAsync = require('../utils/catchAsync')
 const {timeSlotSchema} = require('./timeSlotModel')
 
 const fieldSchema = new mongoose.Schema({
@@ -23,4 +22,4 @@ fieldSchema.statics.isNameInUse = async function (name) {
 
 const Field = mongoose.model('Field', fieldSchema)
 
-module.exports = Field
+module.exports = {Field, fieldSchema}

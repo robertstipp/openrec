@@ -1,9 +1,10 @@
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+
 const fieldRouter = require('./routes/fieldRoutes')
 const reservationRouter = require('./routes/reservationRoutes')
-
+const locationRouter = require('./routes/locationRoutes')
 
 const {handleError} = require('./controllers/errorController')
 
@@ -28,6 +29,7 @@ app.get('/', (req,res) => {
   res.send('Hello Word!')
 })
 
+app.use('/api/v1/locations',locationRouter)
 app.use('/api/v1/fields', fieldRouter)
 app.use('/api/v1/reservations',reservationRouter)
 app.use(handleError)

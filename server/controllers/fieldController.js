@@ -1,4 +1,4 @@
-const Field = require('../models/fieldModel')
+const {Field} = require('../models/fieldModel')
 const { TimeSlot } = require('../models/timeSlotModel')
 const {Errorhandler} = require('./errorController')
 const catchAsync = require('../utils/catchAsync')
