@@ -1,30 +1,41 @@
-const Field = require('../models/fieldModel')
+const {Field} = require('../models/fieldModel')
 const { TimeSlot } = require('../models/timeSlotModel')
+const {Errorhandler} = require('./errorController')
+const catchAsync = require('../utils/catchAsync')
 
-exports.getAllFields = async (req,res) => {
-  try {
+exports.getAllFields = catchAsync(async (req,res, next) => {
+
 
     const {sports, hasParking, hasAvailable} = req.query
 
     // Construct a filter object from the query paramters
     let filter = {}
     if (sports !== undefined) {
-
       let sportsArray = sports.split(",")
-
       filter.sports = { $all : sportsArray}
     }
+
     if (hasParking !== undefined) {
+      if (hasParking !== 'true' && hasParking !== 'false') {
+        throw next(new Errorhandler(400,' Invalid Query Parameter: hasParking must be true or false '))
+      }
       filter.hasParking = (hasParking === 'true')
     }
 
     let fields = await Field.find(filter)
 
     if (hasAvailable !== undefined && hasAvailable === 'true') {
+      if (hasAvailable !== 'true' && hasAvailable !== 'false') {
+        throw next(new Errorhandler(400,' Invalid Query Parameter: hasAvailable must be true or false '))
+      }
+
+
       fields = fields.filter(field=>field.timeSlots.some(timeSlot=>timeSlot.isReserved === false))
     }
 
-
+    if (fields.length == 0) {
+      throw next(new Errorhandler(404, 'No fields found'))
+    }
     // Send Response
     res.status(200).json({
       status: 'success',
@@ -33,23 +44,15 @@ exports.getAllFields = async (req,res) => {
         fields
       }
     })
-  } catch (err) {
-    res.status(404).json({
-      status:'fail',
-      message: err
-    })
-  }
-}
+  
+})
 
-exports.getField = async (req,res) => {
-  try {
+exports.getField = catchAsync(async (req,res,next) => {
+  // try {
     const field = await Field.findById(req.params.id)
     
     if (!field) {
-      res.status(404).json({
-        status: 'fail',
-        message: "No field"
-      })
+      throw next(new Errorhandler(404, 'No Field was found with this ID'))
     }
     res.status(200).json({
       status: 'success',
@@ -58,24 +61,15 @@ exports.getField = async (req,res) => {
       }
     })
 
-  } catch (err) {
-    res.status(404).json({
-      status:'fail',
-      message: err
-    })
-  }
-}
 
-exports.getTimeSlots = async (req,res) => {
-  try {
+})
 
+exports.getTimeSlots = (async (req,res) => {
+  
     const {isReserved} = req.query
     const isReservedBool = isReserved === 'true'
     
-
-
     const fields = await Field.find().populate('timeSlots')
-
     const timeSlots = fields.reduce((acc,curr)=>{
 
       // filter if isReserved query parameter is provided
@@ -94,16 +88,18 @@ exports.getTimeSlots = async (req,res) => {
       }
     })
 
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err
-    })
-  }
-}
+})
 
-exports.getTimeSlotsForDay = async (req,res) => {
-  try {
+exports.getTimeSlotsForDay = catchAsync(async (req,res,next) => {
+
+    const dateRegexp = /^\d{4}-\d{2}-\d{2}$/;
+
+
+    // Added Error handing for invalid date
+    if (!dateRegexp.test(req.params.date)) {
+      throw next(new Errorhandler(400, 'Invalid Date'))   
+    }
+  
     const targetDate = new Date(req.params.date)
     const nextDay = new Date(targetDate)
     nextDay.setDate(targetDate.getDate() + 1)
@@ -128,6 +124,10 @@ exports.getTimeSlotsForDay = async (req,res) => {
         }
       })
     })
+
+    if (timeSlots.length === 0 ) {
+      throw next(new Errorhandler(404, 'No time slots found'))
+    }
     res.status(200).json({
       status: 'success',
       data: {
@@ -135,17 +135,14 @@ exports.getTimeSlotsForDay = async (req,res) => {
       }
     })
 
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err
-    })
-  }
-}
+})
 
-exports.createField = async (req,res) => {
-  try {
-    
+exports.createField = catchAsync(async (req,res,next) => {  
+    const {name} = req.body
+    const isNameInUse = await Field.isNameInUse(name)
+    if (isNameInUse) {
+      throw next(new Errorhandler(404, 'No Field was found with this ID'))
+    }
     const newField = await Field.create(req.body)
     res.status(200).json({
       status: 'success',
@@ -153,24 +150,14 @@ exports.createField = async (req,res) => {
         newField
       }
     })
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err
-    })
-  }
-}
+})
 
-exports.deleteField = async (req,res) => {
-  try {
+exports.deleteField = catchAsync(async (req,res,next) => {
+  
     const field = await Field.findById(req.params.id)
 
     if (!field) {
-      res.status(404).json({
-        status: 'fail',
-        message: 'Field not found'
-      })
-      return
+      throw next(new Errorhandler(400, 'Invalid Date'))  
     }
 
     await Field.findByIdAndDelete(req.params.id)
@@ -179,16 +166,11 @@ exports.deleteField = async (req,res) => {
       status: 'success',
       data: null
     })
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err
-    })
-  }
-}
+  
+})
 
-exports.addTimeSlot = async (req,res) => {
-  try {
+exports.addTimeSlot = catchAsync (async (req,res, next) => {
+  
     // Get the field ID from the route parameters
     const fieldId = req.params.id
     
@@ -197,11 +179,7 @@ exports.addTimeSlot = async (req,res) => {
 
     // Check if field was found
     if (!field) {
-      res.status(404).json({
-        status: 'fail',
-        message: 'Field not found'
-      })
-      return
+      throw next(new Errorhandler(404, 'No Field was found with this ID'))
     }
 
 
@@ -211,27 +189,44 @@ exports.addTimeSlot = async (req,res) => {
     newTimeSlot.startTime = new Date(newTimeSlot.startTime)
     newTimeSlot.endTime = new Date(newTimeSlot.endTime)
 
+    
+    if (isNaN(newTimeSlot.startTime) || isNaN(newTimeSlot.endTime)) {
+      throw next(new Errorhandler(400, 'Invalid start or end time'))
+    }
+
+    if (newTimeSlot.startTime < new Date()) {
+      throw next(new Errorhandler(400, 'Start time must be in the future'))
+    }
+
+    if (newTimeSlot.startTime.toISOString().substring(0,10) !== newTimeSlot.endTime.toISOString().substring(0,10)) {
+      throw next(new Errorhandler(400, 'Start and end times must be on the same day'))
+    }
+    
+    const diffInMinutes = (newTimeSlot.endTime - newTimeSlot.startTime) / (1000 * 60)
+
+    if (diffInMinutes <= 0) {
+      throw next(new Errorhandler(400, 'Start time most occur before end time'))
+    }
+
+    if (diffInMinutes < 30) {
+      throw next(new Errorhandler(400, 'Start and end times must be at least 30 minutes apart'))
+    }
+
+    
+
     // Check for conflicting timeslots
     for (let existingSlot of field.timeSlots) {
       let existingSlotStartTime = new Date(existingSlot.startTime)
       let existingSlotEndTime = new Date(existingSlot.endTime)
 
-      if (newTimeSlot.startTime < existingSlotEndTime && newTimeSlot.endTime > existingSlotStartTime)
-        return res.status(400).json({
-          status: 'fail',
-          message: 'Time slot conflict'
-        })
+      if (newTimeSlot.startTime < existingSlotEndTime && newTimeSlot.endTime > existingSlotStartTime) {
+        throw next(new Errorhandler(400, 'Time slot conflict. Timeslots cannot overlap'))
+      }
     }
-
-
     const createdTimeSlot = await TimeSlot.create(newTimeSlot)
     
-    
     field.timeSlots.push(createdTimeSlot)
-
     await field.save()
-
-  
 
     res.status(201).json({
       status: 'success',
@@ -239,10 +234,5 @@ exports.addTimeSlot = async (req,res) => {
         field: field
       }
     })
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err
-    })
-  }
-}
+
+})
