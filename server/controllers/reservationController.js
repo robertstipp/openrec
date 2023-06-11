@@ -1,11 +1,11 @@
 const Field = require('../models/fieldModel')
 const Reservation = require('../models/reservationModel')
+const catchAsync = require('../utils/catchAsync')
+const { Errorhandler } = require('./errorController')
 
 
-exports.getAllReservations = async (req, res) => {
-  try {
+exports.getAllReservations = catchAsync(async (req, res) => {
     const reservations = await Reservation.find()
-
     res.status(200).json({
       status: 'success',
       results: reservations.length,
@@ -14,22 +14,15 @@ exports.getAllReservations = async (req, res) => {
       }
     })
 
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err
-    })
-  }
-}
+})
 
-exports.getReservation = async (req,res) => {
+exports.getReservation = catchAsync(async (req,res,next) => {
+
+  
   const reservation = await Reservation.findById(req.params.id)
 
   if (!reservation) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Reservation not found'
-    })
+    throw next(new Errorhandler(404, 'No Reservation found with this ID'))
   }
 
   res.status(201).json({
@@ -38,20 +31,20 @@ exports.getReservation = async (req,res) => {
       reservation: reservation
     }
   })
-}
+})
 
-exports.createReservation =  async (req,res) => {
-  try {
+exports.createReservation =  catchAsync(async (req,res,next) => {
     const {timeSlotId,fieldId} = req.body
+
+    if (!timeSlotId || !fieldId) {
+      throw next(new Errorhandler(400, 'Both timeSlotId and fieldId must be provided'))
+    }
 
     // Find the field
     const field = await Field.findById(fieldId)
 
     if (!field) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Field not found'
-      })
+      throw next(new Errorhandler(404, 'No Field was found with this ID'))
     }
 
 
@@ -59,19 +52,11 @@ exports.createReservation =  async (req,res) => {
     const timeSlot = await field.timeSlots.id(timeSlotId)
 
     if (!timeSlot) {
-      res.status(404).json({
-        status: 'fail',
-        message: 'Time slot not found'
-      })
-      return
+      throw next(new Errorhandler(400, 'No Timeslot was found with this ID'))
     }
 
     if (timeSlot.isReserved) {
-      res.status(400).json({
-        status: 'fail',
-        message: 'Time slot is already reserved'
-      })
-      return
+      throw next(new Errorhandler(409, 'Timeslot is already reserved'))
     }
 
     // If the time slot is not reserved, then reserve it
@@ -91,44 +76,35 @@ exports.createReservation =  async (req,res) => {
         reservation: newReservation
       }
     })
-  } catch (err) {
-    res.status(404).json({
-      status:'fail',
-      message: 'failed at the bottom'
-    })
-  }
-}
+  
+})
 
-exports.deleteReservation = async (req,res) => {
-  try {
+exports.deleteReservation = catchAsync(async (req,res) => {
+  
+
     const reservation = await Reservation.findById(req.params.id).populate('field')
     
-    
+
     if (!reservation) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Reservation not found'
-      })
+      throw next(new Errorhandler(404, 'No Reservation found with this ID'))
     }
 
     // Find the Field within the reservation
     const field = await Field.findById(reservation.field._id);
+
+
     if (!field) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Field not found'
-      })
+      throw next(new Errorhandler(404, 'No Field was found with this ID'))
     }
 
     // Find the timeSlot within the field
 
     const timeSlot = await field.timeSlots.id(reservation.timeSlot)
 
+
+    
     if (!timeSlot) {
-      res.status(404).json({
-        status: 'fail',
-        message: 'Time slot not found'
-      })
+      throw next(new Errorhandler(400, 'No Timeslot was found with this ID'))
     }
 
     timeSlot.isReserved = false;
@@ -141,10 +117,5 @@ exports.deleteReservation = async (req,res) => {
       status: 'success',
       data : null
     })
-  } catch (err) {
-    res.status(500).json({
-      status: 'error',
-      message: err.message
-    })
-  }
-}
+  
+})
