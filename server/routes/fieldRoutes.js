@@ -13,9 +13,13 @@ router
   .route('/:id/timeslots')
   .post(fieldController.addTimeSlot)
 
+  router
+  .route('/:id/timeslots/bulkCreate')
+  .post(fieldController.bulkAddTimeSlot)
+
 router
   .route('/timeslots')
-  .get(fieldController.getTimeSlots)
+  .get(fieldController.getAllTimeSlots)
 
 router
   .route('/:id')

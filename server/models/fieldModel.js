@@ -8,13 +8,12 @@ const fieldSchema = new mongoose.Schema({
   },
   sports: [String],
 
-  // TODO - Determine if we are going to attach the field Name here
   location: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Location',
     required: [true, 'A field must have a location']
   },
-  timeSlots: [timeSlotSchema],
+  timeSlots: [{type: mongoose.Schema.Types.ObjectId, ref: 'TimeSlot'}],
   hasParking: {type: Boolean, default: true},
 })
 

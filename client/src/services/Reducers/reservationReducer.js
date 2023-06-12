@@ -17,6 +17,7 @@ const reducer = (state, action) => {
           })
 
         obj.facilityName = facility.name
+        obj.locationName = facility.location.name
         obj.facilityId = facility._id
         obj.date = action.date
         obj.timeSlots = timeSlots

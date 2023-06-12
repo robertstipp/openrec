@@ -5,11 +5,12 @@ import TimeSlotsList from './TimeSlot/TimeSlotsList'
 
 
 const FacilityCard = ({facilityData,toggleSelected}) => {
-    const {facilityId, facilityName, date, timeSlots} = facilityData
+    const {facilityId, locationName, facilityName, date, timeSlots} = facilityData
+    
   return (
 
     <article key={facilityId} className='d-flex flex-column justify-content-start align-items-center'>
-      <TimeSlotHeader facilityName={facilityName} date={date}  />
+      <TimeSlotHeader locationName={locationName} facilityName={facilityName} date={date}  />
       <TimeSlotsList timeSlots={timeSlots} facilityName={facilityName} onTimeSelected={toggleSelected} facilityId={facilityId} />
     </article>
     

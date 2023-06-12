@@ -23,7 +23,11 @@ exports.getAllFields = catchAsync(async (req,res, next) => {
       filter.hasParking = (hasParking === 'true')
     }
 
-    let fields = await Field.find(filter)
+    let fields = await Field
+      .find(filter)
+      .populate('location')
+      .populate('timeSlots')
+    
 
     if (hasAvailable !== undefined && hasAvailable === 'true') {
       if (hasAvailable !== 'true' && hasAvailable !== 'false') {
@@ -49,7 +53,7 @@ exports.getAllFields = catchAsync(async (req,res, next) => {
 })
 
 exports.getField = catchAsync(async (req,res,next) => {
-    const field = await Field.findById(req.params.id)
+    const field = await Field.findById(req.params.id).populate('timeSlots')
     
     if (!field) {
       throw next(new Errorhandler(404, 'No Field was found with this ID'))
@@ -64,7 +68,7 @@ exports.getField = catchAsync(async (req,res,next) => {
 
 })
 
-exports.getTimeSlots = (async (req,res) => {
+exports.getAllTimeSlots = (async (req,res) => {
   
     const {isReserved} = req.query
     const isReservedBool = isReserved === 'true'
@@ -189,9 +193,9 @@ exports.addTimeSlot = catchAsync (async (req,res, next) => {
     }
 
 
-    
+    console.log(field.location)
     // Create new time slot from request body
-    const newTimeSlot = {...req.body, field: fieldId}
+    const newTimeSlot = {...req.body, field: fieldId,location: field.location}
     newTimeSlot.startTime = new Date(newTimeSlot.startTime)
     newTimeSlot.endTime = new Date(newTimeSlot.endTime)
 
@@ -242,3 +246,62 @@ exports.addTimeSlot = catchAsync (async (req,res, next) => {
     })
 
 })
+
+exports.bulkAddTimeSlot = catchAsync (async (req, res,next) => {
+  // Get the field ID from the route parameters
+  const fieldId = req.params.id;
+
+  // Fetch the field from the database
+  const field  = await Field.findById(fieldId);
+
+  // Check if field was found
+  if (!field) {
+    throw next(new Errorhandler(404, 'No Field was found with this ID'));
+  }
+
+  // Retrieve startTime, endTime and duration from request body
+  const {startTime: initialStartTime, endTime: finalEndTime, duration} = req.body;
+
+  // Convert startTime and endTime into Date objects
+  let startTime = new Date(initialStartTime);
+  const endTime = new Date(finalEndTime);
+
+  // Loop until startTime is less than endTime
+  while (startTime < endTime) {
+      // Calculate the endTime for the current timeslot
+      const currentEndTime = new Date(startTime.getTime() + duration * 60000);  // duration is in minutes, so multiply by 60000 to convert to milliseconds
+
+      // Check if the calculated endTime is after the finalEndTime
+      if (currentEndTime > endTime) {
+          throw next(new Errorhandler(400, 'The calculated end time of a timeslot exceeds the provided end time'));
+      }
+
+      // Create new time slot from startTime and endTime
+      const newTimeSlot = {startTime, endTime: currentEndTime, field: fieldId};
+
+      // Check for conflicting timeslots
+      for (let existingSlot of field.timeSlots) {
+        let existingSlotStartTime = new Date(existingSlot.startTime);
+        let existingSlotEndTime = new Date(existingSlot.endTime);
+
+        if (newTimeSlot.startTime < existingSlotEndTime && newTimeSlot.endTime > existingSlotStartTime) {
+          throw next(new Errorhandler(400, 'Time slot conflict. Timeslots cannot overlap'));
+        }
+      }
+
+      const createdTimeSlot = await TimeSlot.create(newTimeSlot);
+      field.timeSlots.push(createdTimeSlot);
+
+      // Advance startTime by the duration
+      startTime = new Date(startTime.getTime() + duration * 60000);
+  }
+
+  await field.save();
+
+  res.status(201).json({
+    status: 'success',
+    data: {
+      field: field,
+    },
+  });
+});

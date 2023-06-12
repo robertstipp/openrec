@@ -4,6 +4,7 @@ const timeSlotSchema = new mongoose.Schema({
   startTime: Date,
   endTime: Date,
   field: {type: mongoose.Schema.Types.ObjectId, ref: 'Field'},
+  location: {type: mongoose.Schema.Types.ObjectId, ref: 'Location'},
   isReserved: { type: Boolean, default: false},
 
   // TODO - Integrate reserved by User
