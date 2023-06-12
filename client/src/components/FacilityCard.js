@@ -1,7 +1,7 @@
 import React from 'react'
 
-import TimeSlotHeader from './TimeSlotHeader'
-import TimeSlotsList from './TimeSlotsList'
+import TimeSlotHeader from './TimeSlot/TimeSlotHeader'
+import TimeSlotsList from './TimeSlot/TimeSlotsList'
 
 
 const FacilityCard = ({facilityData,toggleSelected}) => {

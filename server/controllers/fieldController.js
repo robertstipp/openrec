@@ -1,5 +1,6 @@
 const {Field} = require('../models/fieldModel')
 const { TimeSlot } = require('../models/timeSlotModel')
+const Location = require('../models/locationModel')
 const {Errorhandler} = require('./errorController')
 const catchAsync = require('../utils/catchAsync')
 
@@ -17,7 +18,7 @@ exports.getAllFields = catchAsync(async (req,res, next) => {
 
     if (hasParking !== undefined) {
       if (hasParking !== 'true' && hasParking !== 'false') {
-        throw next(new Errorhandler(400,' Invalid Query Parameter: hasParking must be true or false '))
+        throw next(new Errorhandler(400,'Invalid Query Parameter: hasParking must be true or false '))
       }
       filter.hasParking = (hasParking === 'true')
     }
@@ -26,7 +27,7 @@ exports.getAllFields = catchAsync(async (req,res, next) => {
 
     if (hasAvailable !== undefined && hasAvailable === 'true') {
       if (hasAvailable !== 'true' && hasAvailable !== 'false') {
-        throw next(new Errorhandler(400,' Invalid Query Parameter: hasAvailable must be true or false '))
+        throw next(new Errorhandler(400,'Invalid Query Parameter: hasAvailable must be true or false '))
       }
 
 
@@ -48,7 +49,6 @@ exports.getAllFields = catchAsync(async (req,res, next) => {
 })
 
 exports.getField = catchAsync(async (req,res,next) => {
-  // try {
     const field = await Field.findById(req.params.id)
     
     if (!field) {
@@ -141,7 +141,7 @@ exports.createField = catchAsync(async (req,res,next) => {
     const {name} = req.body
     const isNameInUse = await Field.isNameInUse(name)
     if (isNameInUse) {
-      throw next(new Errorhandler(404, 'No Field was found with this ID'))
+      throw next(new Errorhandler(404, 'Name already in use'))
     }
     const newField = await Field.create(req.body)
     res.status(200).json({
@@ -157,8 +157,14 @@ exports.deleteField = catchAsync(async (req,res,next) => {
     const field = await Field.findById(req.params.id)
 
     if (!field) {
-      throw next(new Errorhandler(400, 'Invalid Date'))  
+      throw next(new Errorhandler(400, 'No field was found with this id'))  
     }
+
+    await Location.updateOne(
+      { fields: req.params.id },
+      { $pull: { fields: req.params.id } }
+    );
+    
 
     await Field.findByIdAndDelete(req.params.id)
 

@@ -1,11 +1,11 @@
 import React from 'react'
-import { useContext, useEffect } from 'react'
+import { useContext } from 'react'
 
-import { AuthContext } from '../context/AuthContext'
+import { AuthContext } from '../../context/AuthContext'
 
 // import Reservation from './Reservation_V1'
-import Reservation from './Reservation'
-import Navbar from './Navigation/Navbar'
+import Reservation from '../../components/Reservation/Reservation'
+import Navbar from '../../components/Navigation/Navbar'
 
 
 

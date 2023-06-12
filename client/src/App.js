@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import './App.css';
 
-// Components
-import Login from './components/Login'
-import Main from './components/Main'
+// Pages
+import Login from './pages/Login/Login'
+import Main from './pages/Main/Main'
 
 
 // Context

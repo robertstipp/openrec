@@ -38,7 +38,7 @@ const locationSchema = new mongoose.Schema({
   },
   
   address: String,
-  fields : [fieldSchema]
+  fields : [{type: mongoose.Schema.Types.ObjectId, ref: 'Field'}]
 })
 
 locationSchema.virtual('numFields').get(function() {

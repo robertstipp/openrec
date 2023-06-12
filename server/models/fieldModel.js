@@ -7,8 +7,11 @@ const fieldSchema = new mongoose.Schema({
     required: [true, 'A field must have a name'],
   },
   sports: [String],
+
+  // TODO - Determine if we are going to attach the field Name here
   location: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Location',
     required: [true, 'A field must have a location']
   },
   timeSlots: [timeSlotSchema],
