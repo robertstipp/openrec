@@ -305,3 +305,70 @@ exports.bulkAddTimeSlot = catchAsync (async (req, res,next) => {
     },
   });
 });
+
+exports.recurringAddTimeSlot = catchAsync (async (req, res,next)=> {
+  const fieldId = req.params.id
+
+  const field = await Field.findById(fieldId)
+
+  if (!field) {
+    throw next (new Errorhandler(404, 'No field was found with this ID'))
+  }
+
+  // Retrieve startTime, endTime, and duration
+  let {startTime, endTime, duration} = req.body
+
+  // Convert startTime and endTime to Date object
+
+  startTime = new Date(startTime)
+  endTime = new Date(endTime)
+
+  // Create a time slot for each day of the week
+  for (let i = 0; i < 7; i++) {
+    // Create a new date for each day, keeping the same hours and minutes
+    let newStartTime = new Date(startTime)
+    newStartTime.setDate(startTime.getDate() + i)
+    let newEndTime = new Date(endTime)
+    newEndTime.setDate(endTime.getDate() + i)
+    let newDuration = duration
+
+
+    // Loop until newStartTime is less than newEndTime
+    while (newStartTime < newEndTime) {
+      // Calculate the endTime for the current timeslot
+      const currentEndTime = new Date(newStartTime.getTime() + newDuration * 60000);  // 
+
+      // Check if the calculated endTime is after the finalEndTime
+      if (currentEndTime > newEndTime) {
+          throw next(new Errorhandler(400, 'The calculated end time of a timeslot exceeds the provided end time'));
+      }
+
+      // Create new time slot from newStartTime and endTime
+      const newTimeSlot = {startTime: newStartTime, endTime: currentEndTime, field: fieldId};
+
+      // Check for conflicting timeslots
+      for (let existingSlot of field.timeSlots) {
+        let existingSlotStartTime = new Date(existingSlot.startTime);
+        let existingSlotEndTime = new Date(existingSlot.endTime);
+
+        if (newTimeSlot.startTime < existingSlotEndTime && newTimeSlot.endTime > existingSlotStartTime) {
+          throw next(new Errorhandler(400, 'Time slot conflict. Timeslots cannot overlap'));
+        }
+      }
+
+      const createdTimeSlot = await TimeSlot.create(newTimeSlot);
+      field.timeSlots.push(createdTimeSlot);
+
+      // Advance newStartTime by the duration
+      newStartTime = new Date(newStartTime.getTime() + newDuration * 60000);
+    }
+  }
+
+  await field.save()
+  res.status(201).json({
+    status: 'success',
+    data: {
+      field: field
+    }
+  })
+})

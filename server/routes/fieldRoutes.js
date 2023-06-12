@@ -17,6 +17,10 @@ router
   .route('/:id/timeslots/bulkCreate')
   .post(fieldController.bulkAddTimeSlot)
 
+  router
+  .route('/:id/timeslots/recurringCreate')
+  .post(fieldController.recurringAddTimeSlot)
+
 router
   .route('/timeslots')
   .get(fieldController.getAllTimeSlots)

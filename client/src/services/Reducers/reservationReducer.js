@@ -36,7 +36,9 @@ const reducer = (state, action) => {
         }
       };
 
+      // TODO - SUBMIT RESERVATION
     case ACTIONS.SUBMIT_RESERVATION:
+      console.log('reducer')
       return {...state, selectedReservation: {}};
 
     case ACTIONS.SET_DATES:

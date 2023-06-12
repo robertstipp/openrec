@@ -1,7 +1,9 @@
-const Field = require('../models/fieldModel')
+const {Field} = require('../models/fieldModel')
+const {TimeSlot} = require('../models/timeSlotModel')
 const Reservation = require('../models/reservationModel')
 const catchAsync = require('../utils/catchAsync')
 const { Errorhandler } = require('./errorController')
+
 
 
 exports.getAllReservations = catchAsync(async (req, res) => {
@@ -33,51 +35,94 @@ exports.getReservation = catchAsync(async (req,res,next) => {
   })
 })
 
-exports.createReservation =  catchAsync(async (req,res,next) => {
-    const {timeSlotId,fieldId} = req.body
 
-    if (!timeSlotId || !fieldId) {
-      throw next(new Errorhandler(400, 'Both timeSlotId and fieldId must be provided'))
+// TODO - REFACTOR BECAUSE YOU CAN ACCESS THE TIMESLOT DIRECTLY
+
+exports.createReservation = catchAsync(async (req,res,next) => {
+    const {timeSlotId} = req.body
+
+    if (!timeSlotId) {
+      throw next(new Errorhandler(400, 'TimeslotId must be provided'))
     }
 
-    // Find the field
-    const field = await Field.findById(fieldId)
-
-    if (!field) {
-      throw next(new Errorhandler(404, 'No Field was found with this ID'))
-    }
-
-
-    // Find the timeSlot within the field
-    const timeSlot = await field.timeSlots.id(timeSlotId)
+    
+    const timeSlot = await TimeSlot.findById(timeSlotId)
 
     if (!timeSlot) {
-      throw next(new Errorhandler(400, 'No Timeslot was found with this ID'))
+      throw next(new Errorhandler(400, 'No timeslot was found with this ID'))
     }
 
     if (timeSlot.isReserved) {
       throw next(new Errorhandler(409, 'Timeslot is already reserved'))
     }
 
-    // If the time slot is not reserved, then reserve it
+    const {fieldId, locationId} = timeSlot
+
     timeSlot.isReserved = true;
-    await field.save()
+    await timeSlot.save()
 
     // Create the reservation
     const newReservation = await Reservation.create({
+      user: req.body.user,
       field: fieldId,
-      timeSlot: timeSlotId,
-      user: req.body.user
+      location: locationId,
+      timeSlot: timeSlotId
     })
 
-    res.status(201).json({
+
+    res.status(200).json({
       status: 'success',
       data: {
         reservation: newReservation
       }
     })
-  
 })
+// exports.createReservation =  catchAsync(async (req,res,next) => {
+//     const {timeSlotId,fieldId} = req.body
+
+//     if (!timeSlotId || !fieldId) {
+//       throw next(new Errorhandler(400, 'Both timeSlotId and fieldId must be provided'))
+//     }
+
+//     // Find the field
+//     const field = await Field.findById(fieldId)
+    
+//     if (!field) {
+//       throw next(new Errorhandler(404, 'No Field was found with this ID'))
+//     }
+
+
+//     // Find the timeSlot within the field
+//     const timeSlot = await field.timeSlots.findById(timeSlotId)
+
+//     if (!timeSlot) {
+//       throw next(new Errorhandler(400, 'No Timeslot was found with this ID'))
+//     }
+
+//     if (timeSlot.isReserved) {
+//       throw next(new Errorhandler(409, 'Timeslot is already reserved'))
+//     }
+
+//     // If the time slot is not reserved, then reserve it
+//     timeSlot.isReserved = true;
+//     await field.save()
+
+//     // Create the reservation
+//     const newReservation = await Reservation.create({
+//       field: fieldId,
+//       timeSlot: timeSlotId,
+//       user: req.body.user
+//     })
+
+//     res.status(201).json({
+//       status: 'success',
+//       data: {
+//         reservation: newReservation
+//       }
+//     })
+  
+// })
+
 
 exports.deleteReservation = catchAsync(async (req,res) => {
   

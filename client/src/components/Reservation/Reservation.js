@@ -73,7 +73,34 @@ const Reservation = () => {
 
   const toggleDate = date => dispatch(toggleDateAction(date.target.value));
   const toggleSelected = (timeslot, facilityName, facilityId, id) => dispatch(selectTimeSlot(timeslot, facilityName, facilityId, id));
-  const handleSubmit = () => dispatch(submitReservation());
+
+  // ADD THIS TO ACTIONS SOMEHOW
+  const handleSubmit =  async () => {
+    try {
+      const newReservation = {
+        timeSlotId : selectedReservation.reservationId,
+        user: 'Bobby'
+      }
+      const response  = await fetch(`${URL}/api/v1/reservations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newReservation)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Could not submit reservation')
+      }
+
+      dispatch({type: ACTIONS.SUBMIT_RESERVATION})
+
+    } catch (error) {
+      console.error('Error', error)
+    }
+  }
 
   
 
